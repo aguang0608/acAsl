@@ -1,4 +1,4 @@
-# acAsl
+# acAsl - Developing..
 
 ##Description
   A streamlined blog system written by PHP for acAsl group or any other person.
