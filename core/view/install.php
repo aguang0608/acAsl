@@ -24,7 +24,7 @@
           <input name="pswd" placeholder="pswd" type="text">
           <input name="db" placeholder="db" type="text">
           <input name="admin" placeholder="admin" type="text">
-          <input value="install" type="submit">
+          <button type="submit">install</button>
         </form>
       <?php } ?>
     </div>

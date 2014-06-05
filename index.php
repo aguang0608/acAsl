@@ -6,6 +6,7 @@
     const acAsl_VIEW_PATH = "core/view/" ;
     const acAsl_PATH = "/acAsl" ;
     const acAsl_DEBUG = true ;
+    const acAsl_PAGE_SIZE = 10 ;
 
     class acAsl_Option {
         private $option_variables ;
@@ -42,8 +43,8 @@
     class acAsl_Argument {
         private $arguments ;
         function __construct() {
-            $this->arguments = strpos( $_SERVER[ 'REQUEST_URI' ] , $_SERVER[ 'SCRIPT_NAME' ] ) === false ? array() : explode( '/', str_replace( $_SERVER[ 'SCRIPT_NAME' ], '', $_SERVER[ 'REQUEST_URI' ] ) ) ;
-            array_shift( $this->arguments );
+            $this->arguments = explode( '/', $_SERVER[ "QUERY_STRING" ] ) ;
+            echo json_encode( $this->arguments ) ;
         }
         function get( $th ) {
             return isset( $this->arguments[ $th ] ) ? $this->arguments[ $th ] : false ;
@@ -103,6 +104,40 @@
             }
             return $res ;
         }
+        public function tags() {
+            return $this->query( "SELECT * FROM `tag` ;" ) ;
+        }
+        public function tag_exist( $id ) {
+            $id = settype( $id , "integer" ) ? $id : 0 ;
+            $res = $this->query( "SELECT COUNT(*) AS CNT FROM `tag` WHERE `id`='$id' ;" ) ;
+            $row = $res->fetch_array() ;
+            return $row[ "CNT" ] > 0 ;
+        }
+        public function tag( $id , $name = false  ) {
+            $id = settype( $id , "integer" ) ? $id : 0 ;
+            if ( gettype( $name ) == "string" ) {
+                $name = $this->real_escape_string( $name ) ;
+                $this->query( "UPDATE `tag` SET `name`='$name' WHERE `id`='$id' ;" ) ;
+            }
+            $res = $this->query( "SELECT * FROM `tag` WHERE `id`='$id' ;" ) ;
+            return $res->fetch_array() ;
+        }
+        public function posts( $page ) {
+            $cnt = $this->posts_cnt() ;
+            if ( !settype( $page , "integer" ) || $page < 0 || $page * acAsl_PAGE_SIZE >= $cnt ) {
+                return false ;
+            }
+            return array(
+                "result" => $this->query( "SELECT * FROM `post` LIMIT " . ( $page * acAsl_PAGE_SIZE ) . "," . acAsl_PAGE_SIZE . " ; " ) ,
+                "prev" => ( $page > 0 ) ? ( $page - 1 ) : false,
+                "next" => ( ( $page + 1 ) * acAsl_PAGE_SIZE < $cnt ) ? ( $page + 1 ) : false 
+            ) ;
+        }
+        public function posts_cnt() {
+            $res = $this->query( "SELECT COUNT(*) AS CNT FROM `post` ; " ) ;
+            $row = $res->fetch_array() ;
+            return $row[ "CNT" ] ;
+        } 
 
     }
 
@@ -127,8 +162,16 @@
                             break ;
                         case "t" :
                             $this->tag() ;
+                            break ;
                         case "p" :
                             $this->post() ;
+                            break ;
+                        case "login" :
+                            $this->login() ;
+                            break ;
+                        case "admin" :
+                            $this->admin() ;
+                            break ;
                         default :
                             new acAsl_View( "404" ) ;
 
@@ -169,9 +212,51 @@
             echo "index" ;
         }
         public function tag() {
-
+            echo "tag" ;
         }
         public function post() {
+
+        }
+        public function login() {
+            if ( $this->acAsl_PostGet->isPost() ) {
+                $this->acAsl_Session->is_admin = $this->acAsl_PostGet->admin === $this->acAsl_Option->admin ;
+            }
+            if ( $this->acAsl_Session->is_admin ) {
+                header( "location:" . acAsl_PATH . "/?admin" ) ;
+            }
+            new acAsl_View( "login" , $this->acAsl_PostGet->isPost() ? "wrong!" : false ) ;
+        }
+        public function admin() {
+            if ( !$this->acAsl_Session->is_admin ) {
+                header( "location" . acAsl_PATH . "/?login" ) ;
+            }
+            switch( $this->acAsl_Argument->get( 1 ) ) {
+                case "tags" :
+                    new acAsl_View( "admin_tags" , $this->acAsl_Model->tags() ) ;
+                    break ;
+                case "tag" :
+                    if ( $this->acAsl_Model->tag_exist( $this->acAsl_Argument->get(2) ) ) {
+                        new acAsl_View( "admin_tag", $this->acAsl_Model->tag( $this->acAsl_Argument->get(2) , $this->acAsl_PostGet->name ) ) ;
+                    } else {
+                        new acAsl_View( "404" ) ;
+                    }
+                    break ;
+                case "posts" :
+                    ( $tmp = $this->acAsl_Model->posts( $this->acAsl_Argument->get( 2 ) ) ) ? ( new acAsl_View( "admin_posts" , $tmp ) ) : (new acAsl_View( "404" ) ) ;
+                case "post" :
+                    $this->admin_post() ;
+                    break ;
+                default :
+                    $this->admin_index() ;
+            } 
+        }
+        public function admin_tags() {
+            
+        }
+        public function admin_post() {
+
+        }
+        public function admin_index() {
 
         }
     }

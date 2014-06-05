@@ -1,3 +1,7 @@
+* {
+    margin : 0px ;
+    padding : 0px ;
+}
 div.header {
     font-size : 11px ;
     font-weight : bold ;
@@ -11,9 +15,24 @@ div.content {
     padding-top : 3px ;
     padding-left : 3px ;
 }
-form input[type=text]{
-    border-width : 1px solid #BBB ;
+form input[type=text] {
+    border : 1px solid #BBB ;
     font-size : 11px ;
-    height : 13px ;
+    height : 15px ;
     font-family : Verdana, helvetica, sans-serif ;
+    vertical-align:bottom
+}
+button[type=submit] {
+    height : 15px ;
+    border : 1px solid #BBB ;
+}
+div.admin-tags a {
+    display : inline-block ;
+    padding : 2px ;
+
+}
+div.admin-posts a {
+    display : block ;
+    padding-left : 3px ;
+    padding-top : 3px ;
 }

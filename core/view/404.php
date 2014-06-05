@@ -10,7 +10,7 @@
       acAsl
     </div>
     <div class="content">
-      <a href="<?php echo acAsl_PATH ; ?>">Back</a>
+      <a href="<?php echo acAsl_PATH; ?>">Index</a>
       404 Not Found
     </div>
   </bdoy>
