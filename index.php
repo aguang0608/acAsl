@@ -40,17 +40,6 @@
         }
     }
 
-    class acAsl_Argument {
-        private $arguments ;
-        function __construct() {
-            $this->arguments = explode( '/', $_SERVER[ "QUERY_STRING" ] ) ;
-            echo json_encode( $this->arguments ) ;
-        }
-        function get( $th ) {
-            return isset( $this->arguments[ $th ] ) ? $this->arguments[ $th ] : false ;
-        }
-    }
-
     class acAsl_Session {
         function __construct() {
             session_start() ;
@@ -79,7 +68,8 @@
         private $arguments ;
         function __construct( $view , $arguments = false ) {
             $this->arguments = $arguments ;
-            return ( @include acAsl_VIEW_PATH . $view . ".php" ) ;
+            @include acAsl_VIEW_PATH . $view . ".php" ;
+            die() ;
         }
     }
 
@@ -148,37 +138,16 @@
         private $acAsl_PostGet ;
         private $acAsl_Model ;
         function __construct() {
-            $this->acAsl_Argument = new acAsl_Argument() ;
             $this->acAsl_Session = new acAsl_Session() ;
             $this->acAsl_PostGet = new acAsl_PostGet() ;
             $this->acAsl_Option = new acAsl_Option() ;
             if ( $this->acAsl_Option->exist( [ "host", "user", "db", "pswd", "admin" ] ) ) {
                 try {
                     $this->acAsl_Model = new acAsl_Model( $this->acAsl_Option->host , $this->acAsl_Option->user , $this->acAsl_Option->pswd , $this->acAsl_Option->db ) ;
-                    switch( $this->acAsl_Argument->get( 0 ) ) {
-                        case "" :
-                        case "i" :
-                            $this->index() ;
-                            break ;
-                        case "t" :
-                            $this->tag() ;
-                            break ;
-                        case "p" :
-                            $this->post() ;
-                            break ;
-                        case "login" :
-                            $this->login() ;
-                            break ;
-                        case "admin" :
-                            $this->admin() ;
-                            break ;
-                        default :
-                            new acAsl_View( "404" ) ;
-
-                    }
                 } catch ( Exception $err ) {
                     new acAsl_View( "500" , acAsl_DEBUG ? $err->getMessage() : false ) ;
                 }
+
             } else {
                 $this->install() ;
             }
@@ -261,5 +230,51 @@
         }
     }
 
-    new acAsl_Controller() ;
+    class acAsl_Router {
+        private $arguments ;
+        function __construct() {
+            $this->arguments = explode( '/', $_SERVER[ "QUERY_STRING" ] ) ;
+            echo json_encode( $this->arguments ) ;
+        }
+        function select( $route ) {
+            $arguments = $this->arguments ;
+            while ( !is_callable( $route ) ) {
+                if ( count( $arguments ) > 0 && isset( $route[ $arguments[ 0 ] ] ) ) {
+                    $route = $route[ $arguments[ 0 ] ] ;
+                    array_shift( $arguments ) ;
+                } else {
+                    new acAsl_View( "404" ) ;
+                    return ;
+                }
+            }
+            call_user_func_array( $route , $this->arguments ) ;
+        }
+    }
+
+    class acAsl_Main {
+        private $acAsl_Router ;
+        private $acAsl_Controller ;
+        function __construct() {
+            $this->acAsl_Router = new acAsl_Router() ;
+            $this->acAsl_Controller = new acAsl_Controller() ;
+        }
+        function run() {
+            $this->acAsl_Router->select(
+                array(
+                    "" => function() {
+                        echo "default" ;
+                    } ,
+                    "index" => function() {
+                        echo "index" ;
+                    } ,
+                    "list" => function() {
+                        echo "list" ;
+                    }
+                )
+            ) ;
+        }
+    }
+
+    $acAsl_Handle = new acAsl_Main() ;
+    $acAsl_Handle->run() ;
 
